@@ -120,7 +120,8 @@ void ConvertToDistTensor(Tensor* x, const phi::distributed::ProcessMesh* mesh) {
   if (x->is_dist_tensor()) {
     PADDLE_ENFORCE_EQ(
         std::dynamic_pointer_cast<phi::distributed::DistTensor>(x->impl())
-            ->process_mesh(),
+            ->dist_attr()
+            .process_mesh(),
         *mesh,
         platform::errors::InvalidArgument(
             "Input %s has different mesh. However all inputs should "
@@ -135,18 +136,16 @@ void ConvertToDistTensor(Tensor* x, const phi::distributed::ProcessMesh* mesh) {
             "Failed to convert input %s impl to phi::distributed::DistTensor "
             "as it's not phi::DenseTensor.",
             x->name()));
-    phi::distributed::Placements placements;
-    for (int64_t i = 0; i < mesh->ndim(); ++i) {
-      placements.emplace_back(std::make_shared<phi::distributed::Replicate>());
-    }
-
+    phi::distributed::TensorDistAttr dist_attr(
+        common::vectorize(x->impl()->dims()));
+    dist_attr.set_process_mesh(*mesh);
     auto dense_t = std::static_pointer_cast<phi::DenseTensor>(x->impl());
     // auto parallel in dygraph doesn't support strided kernel.
     if (!dense_t->meta().is_contiguous()) {
       *dense_t = paddle::experimental::Trans2Contiguous(*dense_t);
     }
-    x->set_impl(std::make_shared<phi::distributed::DistTensor>(
-        dense_t, *mesh, placements));
+    x->set_impl(
+        std::make_shared<phi::distributed::DistTensor>(dense_t, dist_attr));
   }
 }
 
@@ -394,7 +393,8 @@ std::vector<paddle::Tensor> CastPyArg2VectorOfTensor(
             local_mesh =
                 &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                       tensor.impl())
-                      ->process_mesh());
+                      ->dist_attr()
+                      .process_mesh());
             mesh_start_index = i;
           }
         }
@@ -433,7 +433,8 @@ std::vector<paddle::Tensor> CastPyArg2VectorOfTensor(
             local_mesh =
                 &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                       tensor.impl())
-                      ->process_mesh());
+                      ->dist_attr()
+                      .process_mesh());
             mesh_start_index = i;
           }
         }
@@ -1430,7 +1431,8 @@ std::vector<paddle::Tensor> GetTensorListFromArgs(
           local_mesh =
               &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                     tensor.impl())
-                    ->process_mesh());
+                    ->dist_attr()
+                    .process_mesh());
           mesh_start_index = i;
         }
       }
@@ -1463,7 +1465,8 @@ std::vector<paddle::Tensor> GetTensorListFromArgs(
           local_mesh =
               &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                     tensor.impl())
-                    ->process_mesh());
+                    ->dist_attr()
+                    .process_mesh());
           mesh_start_index = i;
         }
       }
@@ -1536,7 +1539,8 @@ paddle::optional<std::vector<paddle::Tensor>> GetOptionalTensorListFromArgs(
           local_mesh =
               &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                     tensor.impl())
-                    ->process_mesh());
+                    ->dist_attr()
+                    .process_mesh());
           mesh_start_index = i;
         }
       }
@@ -1569,7 +1573,8 @@ paddle::optional<std::vector<paddle::Tensor>> GetOptionalTensorListFromArgs(
           local_mesh =
               &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                     tensor.impl())
-                    ->process_mesh());
+                    ->dist_attr()
+                    .process_mesh());
           mesh_start_index = i;
         }
       }
@@ -1674,7 +1679,8 @@ std::vector<paddle::Tensor*> GetTensorPtrListFromArgs(
           local_mesh =
               &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                     tensor->impl())
-                    ->process_mesh());
+                    ->dist_attr()
+                    .process_mesh());
           mesh_start_index = i;
         }
       }
@@ -1706,7 +1712,8 @@ std::vector<paddle::Tensor*> GetTensorPtrListFromArgs(
           local_mesh =
               &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                     tensor->impl())
-                    ->process_mesh());
+                    ->dist_attr()
+                    .process_mesh());
           mesh_start_index = i;
         }
       }
@@ -1753,7 +1760,8 @@ std::vector<paddle::Tensor*> GetTensorPtrListFromPyObject(PyObject* obj) {
           local_mesh =
               &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                     tensor->impl())
-                    ->process_mesh());
+                    ->dist_attr()
+                    .process_mesh());
           mesh_start_index = i;
         }
       }
@@ -1781,7 +1789,8 @@ std::vector<paddle::Tensor*> GetTensorPtrListFromPyObject(PyObject* obj) {
           local_mesh =
               &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                     tensor->impl())
-                    ->process_mesh());
+                    ->dist_attr()
+                    .process_mesh());
           mesh_start_index = i;
         }
       }
@@ -1823,7 +1832,8 @@ std::vector<paddle::Tensor> GetTensorListFromPyObject(PyObject* obj,
             local_mesh =
                 &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                       tensor.impl())
-                      ->process_mesh());
+                      ->dist_attr()
+                      .process_mesh());
             mesh_start_index = i;
           }
         }
@@ -1861,7 +1871,8 @@ std::vector<paddle::Tensor> GetTensorListFromPyObject(PyObject* obj,
             local_mesh =
                 &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                       tensor.impl())
-                      ->process_mesh());
+                      ->dist_attr()
+                      .process_mesh());
             mesh_start_index = i;
           }
         }
@@ -2676,7 +2687,8 @@ PyMODINIT_FUNC PyInit__static_op_arg_pre_cast_hook() {
 void DistTensorTypeParser::operator()(const Tensor& x) {
   if (x.defined() && x.is_dist_tensor()) {
     *mesh = &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(x.impl())
-                  ->process_mesh());
+                  ->dist_attr()
+                  .process_mesh());
     result = true;
   }
 }
@@ -2686,7 +2698,8 @@ void DistTensorTypeParser::operator()(const paddle::optional<Tensor>& x) {
     if (x.get_ptr()->defined() && x.get_ptr()->is_dist_tensor()) {
       *mesh = &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(
                     x.get_ptr()->impl())
-                    ->process_mesh());
+                    ->dist_attr()
+                    .process_mesh());
       result = true;
     }
   }
@@ -2698,7 +2711,8 @@ void DistTensorTypeParser::operator()(const std::vector<Tensor>& x) {
       if (t.defined() && t.is_dist_tensor()) {
         *mesh =
             &(std::dynamic_pointer_cast<phi::distributed::DistTensor>(t.impl())
-                  ->process_mesh());
+                  ->dist_attr()
+                  .process_mesh());
         result = true;
         break;
       }
@@ -2714,7 +2728,8 @@ void DistTensorTypeParser::operator()(
         if (t.defined() && t.is_dist_tensor()) {
           *mesh = &(
               std::dynamic_pointer_cast<phi::distributed::DistTensor>(t.impl())
-                  ->process_mesh());
+                  ->dist_attr()
+                  .process_mesh());
           result = true;
           break;
         }
