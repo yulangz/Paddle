@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle/phi/core/device_context.h"
+#include "glog/logging.h"
 
 #if defined(PADDLE_WITH_CUDA)
 #include "paddle/phi/backends/gpu/cuda/cuda_graph.h"
@@ -384,6 +385,10 @@ void* DeviceContext::Alloc(TensorBase* tensor,
                            size_t requested_size,
                            bool pinned,
                            bool fake_alloc) const {
+  VLOG(1) << "wht --- DeviceContext::Alloc() tensor = " << tensor << ""
+          << " dtype = " << dtype << " requested_size = " << requested_size
+          << " pinned = " << pinned << " fake_alloc = " << fake_alloc;
+
   if (pinned) {
     return impl_->Alloc(tensor,
                         GetPinnedPlace(GetPlace()),

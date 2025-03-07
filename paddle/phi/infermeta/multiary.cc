@@ -5507,7 +5507,8 @@ void WeightOnlyLinearInferMeta(const MetaTensor& x,
 
   auto x_dims = x.dims();
   auto w_dims = weight.dims();
-  auto n = group_size == -1 ? weight_scale_dims[0] : weight_scale_dims[1];
+  // auto n = group_size == -1 ? weight_scale_dims[0] : weight_scale_dims[1];
+  auto n = w_dims[0];
   PADDLE_ENFORCE(
       weight_dtype == "int8" || weight_dtype == "int4",
       errors::InvalidArgument("quant_method must be 'int8' or 'int4'."));
@@ -5545,27 +5546,29 @@ void WeightOnlyLinearInferMeta(const MetaTensor& x,
             bias_dims.size()));
   }
 
-  // per-channel dequantization
-  if (group_size == -1) {
-    PADDLE_ENFORCE_EQ(
-        weight_scale_dims.size(),
-        1UL,
-        errors::InvalidArgument("The input(weight_scale) must be a 1D Tensor."
-                                "in per-channel mode."));
-  } else /* groupwise dequantization */ {
-    PADDLE_ENFORCE_EQ(
-        weight_scale_dims.size(),
-        2UL,
-        errors::InvalidArgument("The input(weight_scale) must be a 2D Tensor"
-                                " in groupwise mode."));
-    PADDLE_ENFORCE_EQ(
-        weight_scale_dims[0],
-        (w_dims[1] + (group_size - 1)) / group_size,
-        errors::InvalidArgument("The input(weight_scale) dim[0] must be equal "
-                                "to Input(weight) dim[1] / group_size"
-                                "But receive %d and %d",
-                                weight_scale_dims[0],
-                                (w_dims[1] + (group_size - 1)) / group_size));
+  if (bias.initialized() && weight_scale_dims.size() > 0) {
+    // per-channel dequantization
+    if (group_size == -1) {
+      PADDLE_ENFORCE_EQ(
+          weight_scale_dims.size(),
+          1UL,
+          errors::InvalidArgument("The input(weight_scale) must be a 1D Tensor."
+                                  "in per-channel mode."));
+    } else /* groupwise dequantization */ {
+      PADDLE_ENFORCE_EQ(
+          weight_scale_dims.size(),
+          2UL,
+          errors::InvalidArgument("The input(weight_scale) must be a 2D Tensor"
+                                  " in groupwise mode."));
+      PADDLE_ENFORCE_EQ(
+          weight_scale_dims[0],
+          (w_dims[1] + (group_size - 1)) / group_size,
+          errors::InvalidArgument("The input(weight_scale) dim[0] must be equal "
+                                  "to Input(weight) dim[1] / group_size"
+                                  "But receive %d and %d",
+                                  weight_scale_dims[0],
+                                  (w_dims[1] + (group_size - 1)) / group_size));
+    }
   }
 
   auto out_dims = x_dims;

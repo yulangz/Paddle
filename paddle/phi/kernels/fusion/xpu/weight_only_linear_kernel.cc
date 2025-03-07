@@ -55,7 +55,7 @@ void WeightOnlyLinearKernel(const Context& dev_ctx,
     }
 
     // paddle::Tensor weight_scale_fp32;
-    // if (weight_scale.is_initialized() && weight_scale.get().dtype() == phi::DataType::FLOAT16) {
+    // if (weight_scale.is_initialized() && weight_scale->dims().size() > 0 && weight_scale.get().dtype() == phi::DataType::FLOAT16) {
     //   weight_scale_fp32 = paddle::full(weight_scale->shape(), -1, paddle::DataType::FLOAT32, weight_scale->place());
     //   int r = baidu::xpu::api::cast<XPUType, float>(
     //       xpu_ctx->x_context(),
@@ -83,7 +83,7 @@ void WeightOnlyLinearKernel(const Context& dev_ctx,
                         : bias.get().data<float>())
                   : nullptr,
         nullptr,
-        weight_scale.get().dims().size() != 0 ? weight_scale.get().data<float>() : nullptr,  //  weight_scale.data<float>(),// 
+        weight_scale && weight_scale.get().dims().size() != 0 ? weight_scale.get().data<float>() : nullptr, 
         0,
         1,
         nullptr};
@@ -243,7 +243,7 @@ void WeightOnlyLinearKernel(const Context& dev_ctx,
   }
 }
 }  // namespace phi
-PD_REGISTER_KERNEL(weight_only_linear_xpu,
+PD_REGISTER_KERNEL(weight_only_linear,
                    XPU,
                    ALL_LAYOUT,
                    phi::WeightOnlyLinearKernel,

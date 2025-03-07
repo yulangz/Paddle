@@ -557,6 +557,7 @@ bool AnalysisPredictor::Init(
       predictor_stream_ = global_context->stream();
     }
     InitDeviceContexts();
+    // ResourceManager::Instance().InitCPUResource();
   }
 #endif
 

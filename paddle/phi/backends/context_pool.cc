@@ -63,8 +63,10 @@ TEST_API phi::DeviceContext* DeviceContextPool::Get(const phi::Place& place) {
   const std::map<Place, std::shared_future<std::unique_ptr<DeviceContext>>>*
       ptr = nullptr;
   if (external_device_contexts_ && external_device_contexts_->count(place)) {
+    VLOG(1) << "wht --- external_device_contexts_ is " << external_device_contexts_;
     ptr = external_device_contexts_;
   } else {
+    VLOG(1) << "wht --- device_contexts_ is " << &device_contexts_;
     ptr = &device_contexts_;
   }
 
@@ -78,6 +80,7 @@ TEST_API phi::DeviceContext* DeviceContextPool::Get(const phi::Place& place) {
         "Executor.",
         place));
   }
+  VLOG(1) << "wht --- it->second.get().get() is " << it->second.get().get();
   return it->second.get().get();
 }
 

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #pragma once
-
+#include "glog/logging.h"
 #include "paddle/phi/kernels/full_kernel.h"
 
 namespace phi {
@@ -24,7 +24,9 @@ void FullWithTensorKernel(const Context& dev_ctx,
                           const IntArray& shape,
                           DataType dtype,
                           DenseTensor* out) {
+  VLOG(1) << "wht --- full with tensor kernel";
   out->Resize(common::make_ddim(shape.GetData()));
+  VLOG(1) << "wht --- trigger full kernel";
   FullKernel<T, Context>(dev_ctx, shape, Scalar(value), dtype, out);
 }
 }  // namespace phi

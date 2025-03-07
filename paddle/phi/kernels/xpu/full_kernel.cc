@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+#include "glog/logging.h"
 #include "paddle/phi/kernels/full_kernel.h"
 
 #include "paddle/phi/backends/xpu/enforce_xpu.h"
@@ -23,9 +23,21 @@
 #include "paddle/phi/common/scalar.h"
 #include "paddle/phi/core/kernel_registry.h"
 #include "paddle/phi/core/visit_type.h"
-#include "paddle/phi/kernels/impl/full_with_tensor_kernel_impl.h"
+// #include "paddle/phi/kernels/impl/full_with_tensor_kernel_impl.h"
 
 namespace phi {
+
+template <typename T, typename Context>
+void FullWithTensorKernel(const Context& dev_ctx,
+                          const DenseTensor& value,
+                          const IntArray& shape,
+                          DataType dtype,
+                          DenseTensor* out) {
+  VLOG(1) << "wht --- full with tensor kernel in xpu";
+  out->Resize(common::make_ddim(shape.GetData()));
+  VLOG(1) << "wht --- trigger full kernel in xpu";
+  FullKernel<T, Context>(dev_ctx, shape, Scalar(value), dtype, out);
+}
 
 template <typename T, typename Context>
 void FullKernel(const Context& dev_ctx,
@@ -169,6 +181,7 @@ PD_REGISTER_KERNEL(full_with_tensor,
                    int,
                    int64_t,
                    bool,
-                   phi::dtype::float16) {
+                   phi::dtype::float16,
+                   phi::dtype::bfloat16) {
   kernel->InputAt(0).SetBackend(phi::Backend::CPU);
 }

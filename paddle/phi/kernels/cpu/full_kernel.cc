@@ -15,6 +15,8 @@ limitations under the License. */
 #include "paddle/phi/kernels/full_kernel.h"
 
 #include "paddle/phi/backends/cpu/cpu_context.h"
+#include "paddle/phi/backends/xpu/enforce_xpu.h"
+#include "paddle/phi/backends/xpu/xpu_context.h"
 #include "paddle/phi/core/kernel_registry.h"
 #include "paddle/phi/kernels/funcs/eigen/common.h"
 #include "paddle/phi/kernels/funcs/eigen/eigen_function.h"
@@ -25,6 +27,9 @@ namespace phi {
 template <typename T, typename Context, typename VType>
 void FullValue(const Context& dev_ctx, DenseTensor* tensor, VType val) {
   dev_ctx.template Alloc<T>(tensor);
+
+  VLOG(1) << "wht --- ctx is " << dev_ctx.GetPlace();
+
   if (tensor->numel() == 0) {
     return;
   }
@@ -134,6 +139,8 @@ PD_REGISTER_KERNEL(full,
                    phi::dtype::bfloat16,
                    phi::dtype::complex<float>,
                    phi::dtype::complex<double>) {}
+
+
 
 PD_REGISTER_KERNEL(full_like,
                    CPU,

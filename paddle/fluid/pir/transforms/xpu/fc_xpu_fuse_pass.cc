@@ -291,7 +291,6 @@ class FcXpuFuseActPattern : public paddle::drr::DrrPatternBase {
             return phi::DataType::UNDEFINED;
           }
         });
-
     const auto &fc_xpu = res.Op(
         paddle::dialect::FcXpuOp::name(),
         {{

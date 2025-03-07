@@ -97,7 +97,11 @@ SET_NCCL_COMMCONTEXT = """
 #if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL) || defined(PADDLE_WITH_XPU_BKCL)
   const auto & comm_context_manager = phi::distributed::CommContextManager::GetInstance();
   COMM_CONTEXT* comm_context = nullptr;
+  VLOG(1) << "[BKCL_DEBUG]: bkcl begin" << ""; 
+
   if (comm_context_manager.Has(std::to_string(ring_id))) {{
+    VLOG(1) << "[BKCL_DEBUG]: ring id" << ring_id; 
+
     comm_context = static_cast<COMM_CONTEXT*>(
           comm_context_manager.Get(std::to_string(ring_id)));
     PADDLE_ENFORCE_NE(
@@ -107,6 +111,8 @@ SET_NCCL_COMMCONTEXT = """
             "NCCLCommContext is nullptr, collective op should "
             "has ring_id(%d) attr.",
             std::to_string(ring_id)));
+    VLOG(1) << "[BKCL_DEBUG]: comm_context id" << comm_context->GetDevContext() ; 
+
     if (!comm_context->GetDevContext() || !comm_context->GetDevContext()->GetCommContext())
     {{
         auto kernel_res = phi::KernelFactory::Instance().SelectKernelOrThrowError(
@@ -115,6 +121,7 @@ SET_NCCL_COMMCONTEXT = """
         phi::KernelFactory::Instance().AddToLowPrecisionKernelList("{}", kernel_data_type);
         }}
         Backend act_kernel_backend = kernel_res.has_fallback_cpu ? Backend::CPU : kernel_backend;
+        VLOG(1) << "backend is " << act_kernel_backend; 
         auto* dev_context = GetDeviceContextByBackend(act_kernel_backend);
         dev_context->SetCommContext(comm_context);
     }}

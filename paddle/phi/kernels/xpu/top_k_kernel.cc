@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle/phi/kernels/top_k_kernel.h"
+#include "glog/logging.h"
 
 #include "paddle/phi/backends/xpu/enforce_xpu.h"
 #include "paddle/phi/core/kernel_registry.h"
@@ -30,11 +31,60 @@ void TopkKernel(const Context& dev_ctx,
                 DenseTensor* out,
                 DenseTensor* indices) {
   using XPUType = typename XPUTypeTrait<T>::Type;
+  VLOG(1) << "wht --- topk kernel";
 
   const auto& in_dims = x.dims();
+
+
+  if (in_dims.size() == 0) {
+    int r = xpu::copy<XPUType>(dev_ctx.x_context(),
+                               reinterpret_cast<const XPUType*>(x.data<T>()),
+                               reinterpret_cast<XPUType*>(out->data<T>()),
+                               x.numel());
+    PADDLE_ENFORCE_XDNN_SUCCESS(r, "copy");
+    dev_ctx.template Alloc<int64_t>(indices);
+    phi::funcs::set_constant(dev_ctx, indices, static_cast<int64_t>(0));
+
+    return;
+  }
+
+  // axis < 0, calculate the real axis
+  if (axis < 0) {
+    axis += in_dims.size();
+  }
+
+  int k = k_scalar.to<int>();
+  PADDLE_ENFORCE_GE(
+      x.numel(),
+      k,
+      errors::InvalidArgument(
+          "x has only %d element, can not find %d top values.", x.numel(), k));
+  
+  if (k_scalar.FromTensor()) {
+    VLOG(1) << "wht --- k_scalar.FromTensor()";
+    auto out_dims_ = out->dims();
+    VLOG(1) << "wht --- 1 out_dims_ is " << out_dims_;
+    // according to axis to set K value in the dim
+    out_dims_[axis] = k;
+    VLOG(1) << "wht --- 2 out_dims_ is " << out_dims_;
+    VLOG(1) << "k=" << k;
+    out->Resize(out_dims_);
+    indices->Resize(out_dims_);
+  }
+
+
+  VLOG(1) << "wht --- topk kernel in_dims: " << in_dims;
   const T* in_data = x.data<T>();
+  VLOG(1) << "wht --- topk kernel in_data: " << in_data;
+  VLOG(1) << "wht --- indices IsInitialized: " << indices->IsInitialized() << " valid: " << indices->valid() 
+  << ", dtype: " << indices->dtype()
+  << ", numel: " << indices->numel()
+  << ", layout: " << indices->layout()
+  << ", dims: " << indices->dims();
   int64_t* indices_data = dev_ctx.template Alloc<int64_t>(indices);
+  VLOG(1) << "wht --- topk kernel indices_data: " << indices_data;
   T* output_data = dev_ctx.template Alloc<T>(out);
+  VLOG(1) << "wht --- topk kernel output_data: " << output_data;
 
   const auto& out_dims = out->dims();
 
@@ -44,20 +94,20 @@ void TopkKernel(const Context& dev_ctx,
       errors::External(
           "XPU API does not support unsorted topk operation currently."
           " Operator will be supported in future update."));
-  if (in_dims.size() == 0) {
-    int r = xpu::copy<XPUType>(dev_ctx.x_context(),
-                               reinterpret_cast<const XPUType*>(x.data<T>()),
-                               reinterpret_cast<XPUType*>(out->data<T>()),
-                               x.numel());
-    PADDLE_ENFORCE_XDNN_SUCCESS(r, "copy");
+  // if (in_dims.size() == 0) {
+  //   int r = xpu::copy<XPUType>(dev_ctx.x_context(),
+  //                              reinterpret_cast<const XPUType*>(x.data<T>()),
+  //                              reinterpret_cast<XPUType*>(out->data<T>()),
+  //                              x.numel());
+  //   PADDLE_ENFORCE_XDNN_SUCCESS(r, "copy");
 
-    phi::funcs::set_constant(dev_ctx, indices, static_cast<int64_t>(0));
+  //   phi::funcs::set_constant(dev_ctx, indices, static_cast<int64_t>(0));
 
-    return;
-  }
+  //   return;
+  // }
   if (axis < 0) axis += in_dims.size();
 
-  size_t k = k_scalar.to<int>();
+  // size_t k = k_scalar.to<int>();
   if (axis + 1 == in_dims.size()) {
     xpu::ctx_guard RAII_GUARD(dev_ctx.x_context());
     int32_t* indices_int_data =
