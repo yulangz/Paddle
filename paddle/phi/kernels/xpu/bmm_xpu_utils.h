@@ -49,6 +49,7 @@ static void MatMulXPUFunction(const DenseTensor& x,
           &xblas_fc_batch_wrapper<XPUType, int_with_ll_t, float>,
           &xblas_fc_batch_wrapper<XPUType, tfloat32, float>,
           &xblas_fc_batch_wrapper<XPUType, XPUTypeFP16, float>,
+          &xblas_fc_batch_wrapper<XPUType, float, float>,
       };
 
   auto xblas_fc_batch_api = xblas_fc_batch_api_list[fc_calc_type];

@@ -5382,7 +5382,7 @@
   kernel :
     func : weight_only_linear
     data_type : x
-  optional : bias
+  optional : bias, weight_scale
   backward : weight_only_linear_grad
   interfaces : paddle::dialect::InferSymbolicShapeInterface
 

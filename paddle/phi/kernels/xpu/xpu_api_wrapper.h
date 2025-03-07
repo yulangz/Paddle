@@ -40,8 +40,10 @@ enum XPUFCCalcType {
   FC_INT32_WITH_LL,
   FC_TF32,
   FC_FLOAT16,
+  FC_BF16
 };
 
+<<<<<<< HEAD
 using XPUFCCalcTypeMap = std::vector<std::pair<const char*, XPUFCCalcType>>;
 
 inline XPUFCCalcType GetFCCalcTypeFromEnv(const XPUFCCalcTypeMap& env_map,
@@ -50,6 +52,33 @@ inline XPUFCCalcType GetFCCalcTypeFromEnv(const XPUFCCalcTypeMap& env_map,
     if (std::getenv(env_name) != nullptr) {
       return calc_type;
     }
+=======
+template <typename T>
+XPUFCCalcType FCCalcType() {
+  const char* xpu_paddle_fc_float16 = std::getenv("XPU_PADDLE_FC_FLOAT16");
+  if (xpu_paddle_fc_float16 != nullptr &&
+      (std::is_same<phi::dtype::float16, T>::value ||
+       std::is_same<XPUTypeFP16, T>::value || std::is_same<float, T>::value)) {
+    return XPUFCCalcType::FC_FLOAT16;
+  } else if (std::is_same<phi::dtype::float16, T>::value ||
+             std::is_same<XPUTypeFP16, T>::value) {
+    return XPUFCCalcType::FC_INT16;
+  } else if (std::getenv("XPU_PADDLE_FC_INT32") != nullptr) {
+    return XPUFCCalcType::FC_INT32;
+  } else if (std::getenv("XPU_PADDLE_FC_LOCAL_INT16") != nullptr) {
+    return XPUFCCalcType::FC_FLOAT;
+  } else if (std::getenv("XPU_PADDLE_FC_INT32_WITH_LL") != nullptr) {
+    return XPUFCCalcType::FC_INT32_WITH_LL;
+  } else if ((std::is_same<phi::dtype::bfloat16, T>::value ||
+              std::is_same<XPUTypeBF16, T>::value) &&
+             std::getenv("XPU_PADDLE_FC_BF16")) {
+    return XPUFCCalcType::FC_BF16;
+  } else if ((std::is_same<phi::dtype::bfloat16, T>::value ||
+              std::is_same<XPUTypeBF16, T>::value) ||
+             (std::is_same<float, T>::value &&
+              std::getenv("XPU_PADDLE_FC_TF32") != nullptr)) {
+    return XPUFCCalcType::FC_TF32;
+>>>>>>> fix_code
   }
   return default_calc_type;
 }
